@@ -52,7 +52,7 @@ public class Editor extends JFrame implements KeyListener {
         add(buttons, BorderLayout.SOUTH);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-
+        setLocationRelativeTo(null);
         setVisible(true);
     }
 
