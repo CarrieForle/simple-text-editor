@@ -4,6 +4,7 @@ import java.awt.event.*;
 import java.util.Stack;
 
 public class Editor extends JFrame implements KeyListener {
+    private StackFrame stackFrame;
     private ClipboardInterface clipboard = RealClipboard.fromSystem();
     private JLabel status = new JLabel("");
     private JTextArea textArea = new JTextArea();
@@ -11,12 +12,15 @@ public class Editor extends JFrame implements KeyListener {
     private JButton cutButton = new JButton("Cut (F2)");
     private JButton pasteButton = new JButton("Paste (F3)");
     private JButton undoButton = new JButton("Undo (F4)");
+    private JButton showStackButton = new JButton("History (F5)");
     private Stack<Command> history = new Stack<>();
 
     public Editor() {
         setTitle("Editor");
         setLayout(new BorderLayout());
         setSize(500, 400);
+
+        this.stackFrame = new StackFrame(this.history);
 
         this.status.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -39,6 +43,10 @@ public class Editor extends JFrame implements KeyListener {
             this.undo();
         });
 
+        this.showStackButton.addActionListener((e) -> {
+            this.executeCommand(new ShowStackCommand(this, this.stackFrame));
+        });
+
         this.textArea.addKeyListener(this);
         this.textArea.setFont(this.textArea.getFont().deriveFont(20f));
 
@@ -46,6 +54,7 @@ public class Editor extends JFrame implements KeyListener {
         buttons.add(cutButton);
         buttons.add(pasteButton);
         buttons.add(undoButton);
+        buttons.add(showStackButton);
 
         add(this.status, BorderLayout.NORTH);
         add(scrollpane, BorderLayout.CENTER);
@@ -120,6 +129,9 @@ public class Editor extends JFrame implements KeyListener {
                 break;
             case KeyEvent.VK_F4:
                 undo();
+                break;
+            case KeyEvent.VK_F5:
+                this.executeCommand(new ShowStackCommand(this, this.stackFrame));
                 break;
         }
     }

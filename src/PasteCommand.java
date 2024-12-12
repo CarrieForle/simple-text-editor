@@ -17,4 +17,9 @@ public class PasteCommand extends Command {
 
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "Paste";
+    }
 }

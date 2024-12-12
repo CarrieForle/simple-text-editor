@@ -14,4 +14,9 @@ public class CutCommand2 extends Command {
 
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "Cut";
+    }
 }

@@ -15,4 +15,9 @@ public abstract class Command {
     }
 
     public abstract boolean execute();
+
+    @Override
+    public String toString() {
+        return "Command";
+    }
 }
