@@ -1,51 +1,24 @@
 import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.event.*;
-import java.util.Stack;
 
 public class Editor extends JFrame implements KeyListener {
-    private StackFrame stackFrame;
     private ClipboardInterface clipboard = RealClipboard.fromSystem();
     private JLabel status = new JLabel("");
     private JTextArea textArea = new JTextArea();
     private JButton copyButton = new JButton("Copy (F1)");
     private JButton cutButton = new JButton("Cut (F2)");
     private JButton pasteButton = new JButton("Paste (F3)");
-    private JButton undoButton = new JButton("Undo (F4)");
-    private JButton showStackButton = new JButton("History (F5)");
-    private Stack<Command> history = new Stack<>();
 
     public Editor() {
         setTitle("Editor");
         setLayout(new BorderLayout());
         setSize(500, 400);
 
-        this.stackFrame = new StackFrame(this.history);
-
         this.status.setHorizontalAlignment(SwingConstants.CENTER);
 
         JScrollPane scrollpane = new JScrollPane(this.textArea);
         JPanel buttons = new JPanel();
-
-        this.copyButton.addActionListener((e) -> {
-            this.executeCommand(new CopyCommand(this));
-        });
-
-        this.cutButton.addActionListener((e) -> {
-            this.executeCommand(new CutCommand(this));
-        });
-
-        this.pasteButton.addActionListener((e) -> {
-            this.executeCommand(new PasteCommand(this));
-        });
-
-        this.undoButton.addActionListener((e) -> {
-            this.undo();
-        });
-
-        this.showStackButton.addActionListener((e) -> {
-            this.executeCommand(new ShowStackCommand(this, this.stackFrame));
-        });
 
         this.textArea.addKeyListener(this);
         this.textArea.setFont(this.textArea.getFont().deriveFont(20f));
@@ -53,8 +26,6 @@ public class Editor extends JFrame implements KeyListener {
         buttons.add(copyButton);
         buttons.add(cutButton);
         buttons.add(pasteButton);
-        buttons.add(undoButton);
-        buttons.add(showStackButton);
 
         add(this.status, BorderLayout.NORTH);
         add(scrollpane, BorderLayout.CENTER);
@@ -63,24 +34,6 @@ public class Editor extends JFrame implements KeyListener {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setVisible(true);
-    }
-
-    private void executeCommand(Command command) {
-        if (command.execute()) {
-            this.history.push(command);
-        }
-    }
-
-    private void undo() {
-        if (this.history.isEmpty()) {
-            this.setStatus("Cannot undo further");
-            return;
-        }
-
-        Command last_command = this.history.pop();
-        last_command.undo();
-
-        this.setStatus("Undo");
     }
 
     public void replaceSelected(String s) {
@@ -119,19 +72,35 @@ public class Editor extends JFrame implements KeyListener {
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_F1:
-                this.executeCommand(new CopyCommand(this));
+                String copied_text = this.getSelectedText();
+
+                if (copied_text == null || copied_text.isEmpty()) {
+                    return;
+                }
+
+                this.clipboard.setContent(copied_text);
+                this.setStatus("Copy");
                 break;
             case KeyEvent.VK_F2:
-                this.executeCommand(new CutCommand(this));
+                String cut_text = this.getSelectedText();
+
+                if (cut_text == null || cut_text.isEmpty()) {
+                    return;
+                }
+
+                this.getClipboard().setContent(cut_text);
+                this.replaceSelected("");
+                this.setStatus("Cut");
                 break;
             case KeyEvent.VK_F3:
-                this.executeCommand(new PasteCommand(this));
-                break;
-            case KeyEvent.VK_F4:
-                undo();
-                break;
-            case KeyEvent.VK_F5:
-                this.executeCommand(new ShowStackCommand(this, this.stackFrame));
+                String pasted_text = this.clipboard.getContent();
+
+                if (pasted_text == null || pasted_text.isEmpty()) {
+                    return;
+                }
+
+                this.insertAfterCursor(pasted_text);
+                this.setStatus("Paste");
                 break;
         }
     }
@@ -144,5 +113,70 @@ public class Editor extends JFrame implements KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {
         // Do nothing
+    }
+}
+
+class CopyButton extends JButton implements ActionListener {
+    private Editor editor;
+
+    public CopyButton(Editor editor) {
+        this.editor = editor;
+        addActionListener(this);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String copied_text = this.editor.getSelectedText();
+    
+        if(copied_text==null||copied_text.isEmpty()) {
+            return;
+        }
+    
+        this.editor.getClipboard().setContent(copied_text);this.editor.setStatus("Copy");
+    
+        return;
+    }
+}
+
+class PasteButton extends JButton implements ActionListener {
+    private Editor editor;
+
+    public PasteButton(Editor editor) {
+        this.editor = editor;
+        addActionListener(this);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String pasted_text = this.editor.getClipboard().getContent();
+
+        if (pasted_text == null || pasted_text.isEmpty()) {
+            return;
+        }
+
+        this.editor.insertAfterCursor(pasted_text);
+        this.editor.setStatus("Paste");
+    }
+}
+
+class CutButton extends JButton implements ActionListener {
+    private Editor editor;
+
+    public CutButton(Editor editor) {
+        this.editor = editor;
+        addActionListener(this);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String cut_text = this.editor.getSelectedText();
+
+        if (cut_text == null || cut_text.isEmpty()) {
+            return;
+        }
+
+        this.editor.getClipboard().setContent(cut_text);
+        this.editor.replaceSelected("");
+        this.editor.setStatus("Cut");
     }
 }
